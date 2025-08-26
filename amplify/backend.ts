@@ -11,8 +11,8 @@ const backend = defineBackend({
 const customBucketStack = backend.createStack("custom-bucket-stack");
 
 // Use bucket name from environment variable instead of ARN
-const bucketName = process.env.MY_CUSTOM_BUCKET_NAME!;
-const bucketRegion = process.env.MY_CUSTOM_BUCKET_REGION!;
+const bucketName = process.env.MY_CUSTOM_BUCKET_NAME!.trim();;
+const bucketRegion = process.env.MY_CUSTOM_BUCKET_REGION!.trim();;
 
 // Import the existing bucket by name
 const customBucket = Bucket.fromBucketName(
