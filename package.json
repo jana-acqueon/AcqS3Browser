@@ -13,7 +13,11 @@
   "dependencies": {
     "@aws-amplify/ui-react": "^6.9.1",
     "@aws-amplify/ui-react-storage": "^3.8.0",
+    "@aws-sdk/client-s3": "^3.879.0",
+    "@aws-sdk/s3-request-presigner": "^3.879.0",
     "aws-amplify": "^6.15.5",
+    "jwt-decode": "^4.0.0",
+    "mssql": "^11.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -21,6 +25,8 @@
     "@aws-amplify/backend": "^1.14.1",
     "@aws-amplify/backend-cli": "^1.4.11",
     "@eslint/js": "^9.19.0",
+    "@types/jwt-decode": "^3.1.0",
+    "@types/mssql": "^9.1.7",
     "@types/node": "^24.3.0",
     "@types/react": "^19.1.11",
     "@types/react-dom": "^19.1.7",
