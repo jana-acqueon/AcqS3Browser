@@ -9,11 +9,14 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import { Effect, Policy, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { fileURLToPath } from "url";
 
 // Add debugging logs
 console.log('Initializing Amplify backend...');
 
 const backend = defineBackend({ auth });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // ===============================
 // Import existing bucket (env vars)
