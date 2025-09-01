@@ -63,14 +63,14 @@ const authPolicy_Contributor = new Policy(backend.stack, "Contributor_AuthPolicy
         "s3:GetObject",
         "s3:PutObject"
       ],
-      resources: [`${customBucket.bucketArn}/*`,],
+      resources: [`${customBucket.bucketArn}/Test_Folder1/*`,],
     }),
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:ListBucket"],
       resources: [
         `${customBucket.bucketArn}`,
-        `${customBucket.bucketArn}/*`
+        `${customBucket.bucketArn}/Test_Folder1/*`
       ],
     }),
   ],
