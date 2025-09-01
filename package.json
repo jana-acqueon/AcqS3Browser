@@ -1,5 +1,5 @@
 {
-  "name": "sample-amplify-storage-browser",
+  "name": "s3-browser",
   "private": true,
   "version": "0.0.0",
   "type": "module",
