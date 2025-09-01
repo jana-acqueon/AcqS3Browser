@@ -30,7 +30,7 @@ backend.addOutput({
           "": {
             groupsReadOnly: ["list"],
             groupsContributor: ["get", "list", "write"],
-            groupsAdmin: ["get", "list", "write", "delete"],
+            groupsAdministrator: ["get", "list", "write", "delete"],
           },
         },
       }
@@ -74,7 +74,7 @@ const authPolicy_Contributor = new Policy(backend.stack, "Contributor_AuthPolicy
   ],
 });
 
-const authPolicy_Admin = new Policy(backend.stack, "Admin_AuthPolicy", {
+const authPolicy_Administrator = new Policy(backend.stack, "Admin_AuthPolicy", {
   statements: [
     new PolicyStatement({
       effect: Effect.ALLOW,
@@ -101,4 +101,4 @@ const { groups } = backend.auth.resources
 // https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_iam.IRole.html
 groups["ReadOnly"].role.attachInlinePolicy(authPolicy_ReadOnly);
 groups["Contributor"].role.attachInlinePolicy(authPolicy_Contributor);
-groups["Admin"].role.attachInlinePolicy(authPolicy_Admin);
+groups["Administrator"].role.attachInlinePolicy(authPolicy_Administrator);
