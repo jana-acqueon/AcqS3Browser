@@ -28,10 +28,12 @@ backend.addOutput({
         name: customBucket.bucketName,
         paths: {
           "": {
-            groupsReadOnly: ["list"],
-            groupsContributor: ["get", "list", "write"],
-            groupsAdministrator: ["get", "list", "write", "delete"],
+            groupsReadOnly: ["list"], // Read-only access 
+            groupsAdministrator: ["get", "list", "write", "delete"], // Full access
           },
+          "Test_Folder1/*": {
+            groupsContributor: ["get", "list", "write"], // Read and write access (get + list = read)
+          }
         },
       }
     ]
