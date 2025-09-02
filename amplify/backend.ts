@@ -1,17 +1,21 @@
-// amplify/backend.ts
 import { defineBackend } from '@aws-amplify/backend';
 import { auth } from './auth/resource';
 import { Effect, Policy, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 
 const backend = defineBackend({ auth });
+
 const customBucketStack = backend.createStack("custom-bucket-stack");
 
-const bucketName = process.env.MY_CUSTOM_BUCKET_NAME!.trim();
-const bucketRegion = process.env.MY_CUSTOM_BUCKET_REGION!.trim();
+const bucketName = process.env.MY_CUSTOM_BUCKET_NAME?.trim();
+const bucketRegion = process.env.MY_CUSTOM_BUCKET_REGION?.trim();
+
+if (!bucketName || !bucketRegion) {
+  throw new Error("Missing required environment variables: MY_CUSTOM_BUCKET_NAME or MY_CUSTOM_BUCKET_REGION");
+}
+
 const customBucket = Bucket.fromBucketName(customBucketStack, "MyCustomBucket", bucketName);
 
-// ---------------------- Outputs for frontend ----------------------
 backend.addOutput({
   storage: {
     aws_region: bucketRegion,
@@ -25,14 +29,14 @@ backend.addOutput({
           "IMServUAT/": {
             groupsAdministrator: ["get", "list", "write", "delete"],
             groupsContributor: ["get", "list", "write"],
-            groupsLimitedContributor: ["get", "list"], // only files in root
+            groupsLimitedContributor: ["get", "list"], // root files only
           },
-          "IMServUAT/PreProcAutoupload": {
+          "IMServUAT/PreProcAutoupload/": {
             groupsAdministrator: ["get", "list", "write", "delete"],
             groupsContributor: ["get", "list", "write"],
             groupsLimitedContributor: ["get", "list", "write"],
           },
-          "IMServUAT/DataExtract": {
+          "IMServUAT/DataExtract/": {
             groupsAdministrator: ["get", "list", "write", "delete"],
             groupsContributor: ["get", "list", "write"],
             groupsLimitedContributor: ["get", "list", "write"],
@@ -45,25 +49,22 @@ backend.addOutput({
 
 // ---------------------- IAM Policies ----------------------
 
-// Administrator: full access to IMServUAT
-const authPolicy_Administrator = new Policy(customBucketStack, "Administrator_AuthPolicy", {
+const authPolicy_Administrator = new Policy(backend.stack, "Administrator_AuthPolicy", {
   statements: [
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
-      resources: [`${customBucket.bucketArn}/IMServUAT/*`],
+      resources: [`${customBucket.bucketArn}/*`],
     }),
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:ListBucket"],
       resources: [customBucket.bucketArn],
-      conditions: { StringLike: { "s3:prefix": ["IMServUAT/*"] } },
     }),
   ],
 });
 
-// Contributor: upload + list only, no delete
-const authPolicy_Contributor = new Policy(customBucketStack, "Contributor_AuthPolicy", {
+const authPolicy_Contributor = new Policy(backend.stack, "Contributor_AuthPolicy", {
   statements: [
     new PolicyStatement({
       effect: Effect.ALLOW,
@@ -74,39 +75,28 @@ const authPolicy_Contributor = new Policy(customBucketStack, "Contributor_AuthPo
       effect: Effect.ALLOW,
       actions: ["s3:ListBucket"],
       resources: [customBucket.bucketArn],
-      conditions: { StringLike: { "s3:prefix": ["IMServUAT/*"] } },
+      conditions: {
+        StringLike: {
+          "s3:prefix": ["IMServUAT/"],
+        },
+      },
     }),
   ],
 });
 
-// LimitedContributor: see files in IMServUAT root + full access to two subfolders
-const authPolicy_LimitedContributor = new Policy(customBucketStack, "LimitedContributor_AuthPolicy", {
+const authPolicy_LimitedContributor = new Policy(backend.stack, "LimitedContributor_AuthPolicy", {
   statements: [
-    // List & get files in root of IMServUAT
+    // Get access to root files and allowed subfolders
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:GetObject"],
       resources: [
-        `${customBucket.bucketArn}/IMServUAT/*`, // root files
+        `${customBucket.bucketArn}/IMServUAT/*`,
         `${customBucket.bucketArn}/IMServUAT/PreProcAutoupload/*`,
         `${customBucket.bucketArn}/IMServUAT/DataExtract/*`,
       ],
     }),
-    new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: ["s3:ListBucket"],
-      resources: [customBucket.bucketArn],
-      conditions: {
-        StringLike: {
-          "s3:prefix": [
-            "IMServUAT/", // root files
-            "IMServUAT/PreProcAutoupload/*",
-            "IMServUAT/DataExtract/*",
-          ],
-        },
-      },
-    }),
-    // Write access only to the two subfolders
+    // Write access only to allowed subfolders
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:PutObject"],
@@ -115,10 +105,26 @@ const authPolicy_LimitedContributor = new Policy(customBucketStack, "LimitedCont
         `${customBucket.bucketArn}/IMServUAT/DataExtract/*`,
       ],
     }),
+    // List only specific prefixes
+    new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: ["s3:ListBucket"],
+      resources: [customBucket.bucketArn],
+      conditions: {
+        StringLike: {
+          "s3:prefix": [
+            "IMServUAT/",
+            "IMServUAT/PreProcAutoupload/",
+            "IMServUAT/DataExtract/",
+          ],
+        },
+      },
+    }),
   ],
 });
 
 // ---------------------- Attach policies to groups ----------------------
+
 const { groups } = backend.auth.resources;
 
 groups["Administrator"].role.attachInlinePolicy(authPolicy_Administrator);
