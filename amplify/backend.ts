@@ -24,6 +24,7 @@ const permissionToS3Actions: Record<S3PermissionKeys, string[]> = {
 
 /**
  * Dynamically generates a policy statement array from the access configuration.
+ * Supports root-level files via path: "".
  */
 function generatePolicyStatements(bucketArn: string, rules: AccessRule[]): PolicyStatement[] {
   const statements: PolicyStatement[] = [];
@@ -33,34 +34,46 @@ function generatePolicyStatements(bucketArn: string, rules: AccessRule[]): Polic
     const actions: string[] = [];
     const resources: string[] = [];
 
+    // Handle object-level actions (get, put, delete)
     const objectActions = rule.permissions
       .filter((p: string) => p !== "list")
       .flatMap((p: S3PermissionKeys) => permissionToS3Actions[p]);
 
     if (objectActions.length > 0) {
+      if (rule.path === "") {
+        // ✅ Root-level objects
+        resources.push(`${bucketArn}/*`);
+      } else {
+        resources.push(`${bucketArn}/${rule.path}`);
+      }
+
       actions.push(...objectActions);
-      resources.push(`${bucketArn}/${rule.path}`);
-    }
 
-    if (rule.permissions.includes("list")) {
-      // Collect valid S3 prefixes (strip trailing *)
-      listPrefixes.push(rule.path.replace(/\*$/, ""));
-    }
-
-    if (actions.length > 0) {
       statements.push(new PolicyStatement({
         effect: Effect.ALLOW,
-        actions: actions,
-        resources: resources,
+        actions,
+        resources,
       }));
+    }
+
+    // Handle list permissions
+    if (rule.permissions.includes("list")) {
+      if (rule.path === "") {
+        // ✅ Root-level listing
+        listPrefixes.push("");
+      } else {
+        // Normalize: strip trailing *
+        listPrefixes.push(rule.path.replace(/\*$/, ""));
+      }
     }
   }
 
+  // Add a single ListBucket statement if needed
   if (listPrefixes.length > 0) {
     statements.push(new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:ListBucket"],
-      resources: [bucketArn], // ✅ bucket-level only
+      resources: [bucketArn], // ✅ bucket-only ARN
       conditions: {
         StringLike: {
           "s3:prefix": listPrefixes,
