@@ -8,11 +8,11 @@ export interface AccessRule {
 export const accessConfig: Record<string, AccessRule[]> = {
   // Full CRUD access to IMServUAT folder and subfolders
   Administrator: [
-    {
-      // Grant list permission on the root to see folders
-      path: "",
-      permissions: ["list"],
-    },
+    // {
+    //   // Grant list permission on the root to see folders
+    //   path: "",
+    //   permissions: ["list"],
+    // },
     {
       path: "IMServUAT/*",
       permissions: ["get", "list", "write", "delete"],
@@ -21,11 +21,11 @@ export const accessConfig: Record<string, AccessRule[]> = {
 
   // Read/write access but no delete
   Contributor: [
-    {
-      // Grant list permission on the root to see folders
-      path: "",
-      permissions: ["list"],
-    },
+    // {
+    //   // Grant list permission on the root to see folders
+    //   path: "",
+    //   permissions: ["list"],
+    // },
     {
       path: "IMServUAT/*",
       permissions: ["get", "list", "write"],
