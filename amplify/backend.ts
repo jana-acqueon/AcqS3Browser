@@ -27,7 +27,7 @@ const permissionToS3Actions: Record<S3PermissionKeys, string[]> = {
  */
 function generatePolicyStatements(bucketArn: string, rules: AccessRule[]): PolicyStatement[] {
   const statements: PolicyStatement[] = [];
-  const listBucketResources: string[] = [];
+  const listPrefixes: string[] = [];
 
   for (const rule of rules) {
     const actions: string[] = [];
@@ -43,7 +43,8 @@ function generatePolicyStatements(bucketArn: string, rules: AccessRule[]): Polic
     }
 
     if (rule.permissions.includes("list")) {
-      listBucketResources.push(`${bucketArn}/${rule.path.replace(/\*/g, '')}`);
+      // Collect valid S3 prefixes (strip trailing *)
+      listPrefixes.push(rule.path.replace(/\*$/, ""));
     }
 
     if (actions.length > 0) {
@@ -55,11 +56,16 @@ function generatePolicyStatements(bucketArn: string, rules: AccessRule[]): Polic
     }
   }
 
-  if (listBucketResources.length > 0) {
+  if (listPrefixes.length > 0) {
     statements.push(new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:ListBucket"],
-      resources: listBucketResources,
+      resources: [bucketArn], // ✅ bucket-level only
+      conditions: {
+        StringLike: {
+          "s3:prefix": listPrefixes,
+        },
+      },
     }));
   }
 
@@ -68,7 +74,6 @@ function generatePolicyStatements(bucketArn: string, rules: AccessRule[]): Polic
 
 /**
  * Generates the frontend-facing path configuration from the accessConfig.
- * This is the automation that removes the need for manual duplication.
  */
 function generateFrontendPaths(config: Record<string, AccessRule[]>): Record<string, any> {
   const paths: Record<string, any> = {};
