@@ -5,87 +5,91 @@ import { auth } from './auth/resource';
 import { Effect, Policy, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 
-const backend = defineBackend({
-  auth,
-});
-
+const backend = defineBackend({ auth });
 const customBucketStack = backend.createStack("custom-bucket-stack");
 
 const bucketName = process.env.MY_CUSTOM_BUCKET_NAME!.trim();
 const bucketRegion = process.env.MY_CUSTOM_BUCKET_REGION!.trim();
-
 const customBucket = Bucket.fromBucketName(customBucketStack, "MyCustomBucket", bucketName);
 
 const { groups } = backend.auth.resources;
 
-// --- Administrator Policy: Full access to IMServUAT ---
+// ---------------------- Administrator Policy ----------------------
 const administratorPolicy = new Policy(backend.stack, 'Administrator_AuthPolicy', {
   statements: [
-    // Allow listing the bucket's root to see top-level folders
+    // List top-level folders in bucket
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:ListBucket"],
       resources: [customBucket.bucketArn],
     }),
-    // Grant full CRUD access to the IMServUAT folder and its contents
+    // List IMServUAT folder itself
+    new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: ["s3:ListBucket"],
+      resources: [customBucket.bucketArn],
+      conditions: { StringLike: { "s3:prefix": ["IMServUAT/"] } },
+    }),
+    // Full access to objects inside IMServUAT
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
       resources: [`${customBucket.bucketArn}/IMServUAT/*`],
     }),
-    // Explicitly allow listing the contents of the IMServUAT folder
-    new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: ["s3:ListBucket"],
-      resources: [customBucket.bucketArn],
-      conditions: {
-        StringLike: {
-          "s3:prefix": ["IMServUAT/*"],
-        },
-      },
-    }),
   ],
 });
-if (groups.Administrator) {
-  groups.Administrator.role.attachInlinePolicy(administratorPolicy);
-}
+if (groups.Administrator) groups.Administrator.role.attachInlinePolicy(administratorPolicy);
 
-// --- Contributor Policy: RW access to IMServUAT ---
+// ---------------------- Contributor Policy ----------------------
 const contributorPolicy = new Policy(backend.stack, 'Contributor_AuthPolicy', {
   statements: [
-    // Allow listing the bucket's root to see top-level folders
+    // List top-level folders in bucket
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:ListBucket"],
       resources: [customBucket.bucketArn],
     }),
-    // Grant RW access (no delete) to the IMServUAT folder and its contents
+    // List IMServUAT folder itself
+    new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: ["s3:ListBucket"],
+      resources: [customBucket.bucketArn],
+      conditions: { StringLike: { "s3:prefix": ["IMServUAT/"] } },
+    }),
+    // Read/Write access (no delete) inside IMServUAT
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:GetObject", "s3:PutObject"],
       resources: [`${customBucket.bucketArn}/IMServUAT/*`],
     }),
-    // Explicitly allow listing the contents of the IMServUAT folder
+  ],
+});
+if (groups.Contributor) groups.Contributor.role.attachInlinePolicy(contributorPolicy);
+
+// ---------------------- LimitedContributor Policy ----------------------
+const limitedContributorPolicy = new Policy(backend.stack, 'LimitedContributor_AuthPolicy', {
+  statements: [
+    // List top-level folders in bucket
+    new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: ["s3:ListBucket"],
+      resources: [customBucket.bucketArn],
+    }),
+    // List only the two specific subfolders
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:ListBucket"],
       resources: [customBucket.bucketArn],
       conditions: {
         StringLike: {
-          "s3:prefix": ["IMServUAT/*"],
+          "s3:prefix": [
+            "IMServUAT/PreProcAutoupload/",
+            "IMServUAT/DataExtract/",
+          ],
         },
       },
     }),
-  ],
-});
-if (groups.Contributor) {
-  groups.Contributor.role.attachInlinePolicy(contributorPolicy);
-}
-
-// --- LimitedContributor Policy: RW to specific subfolders only ---
-const limitedContributorPolicy = new Policy(backend.stack, 'LimitedContributor_AuthPolicy', {
-  statements: [
-    // Grant Read/Write access to the two specific subfolders
+    // Read/Write access inside the two subfolders
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:GetObject", "s3:PutObject"],
@@ -94,27 +98,11 @@ const limitedContributorPolicy = new Policy(backend.stack, 'LimitedContributor_A
         `${customBucket.bucketArn}/IMServUAT/DataExtract/*`,
       ],
     }),
-    // Grant list permission for the two specific subfolders only
-    new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: ["s3:ListBucket"],
-      resources: [customBucket.bucketArn],
-      conditions: {
-        StringLike: {
-          "s3:prefix": [
-            "IMServUAT/PreProcAutoupload/*",
-            "IMServUAT/DataExtract/*",
-          ],
-        },
-      },
-    }),
   ],
 });
-if (groups.LimitedContributor) {
-  groups.LimitedContributor.role.attachInlinePolicy(limitedContributorPolicy);
-}
+if (groups.LimitedContributor) groups.LimitedContributor.role.attachInlinePolicy(limitedContributorPolicy);
 
-// Frontend configuration
+// ---------------------- Frontend output ----------------------
 backend.addOutput({
   storage: {
     aws_region: bucketRegion,
