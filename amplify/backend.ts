@@ -1,137 +1,133 @@
 // amplify/backend.ts
+
 import { defineBackend } from '@aws-amplify/backend';
 import { auth } from './auth/resource';
+import { Effect, Policy, PolicyStatement } from "aws-cdk-lib/aws-iam";
+import { Bucket } from "aws-cdk-lib/aws-s3";
 
-import * as path from 'path';
-import { fileURLToPath } from 'url';
-import { Bucket } from 'aws-cdk-lib/aws-s3';
-import * as apigw from 'aws-cdk-lib/aws-apigateway';
-import { PolicyStatement, Effect, Policy } from 'aws-cdk-lib/aws-iam';
-import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
-import { Runtime } from 'aws-cdk-lib/aws-lambda';
+// Import the access configuration from the separate file
+import { accessConfig, AccessRule } from './accessConfig';
 
-// -------------------------
-// ESM-safe __dirname
-// -------------------------
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// -------------------------
-// Define backend
-// -------------------------
-const backend = defineBackend({ auth });
-
-// -------------------------
-// Import existing bucket
-// -------------------------
-const bucketStack = backend.createStack('custom-bucket-stack');
-const bucketName = process.env.MY_CUSTOM_BUCKET_NAME!.trim();
-const bucketRegion = process.env.MY_CUSTOM_BUCKET_REGION!.trim();
-const customBucket = Bucket.fromBucketName(bucketStack, 'MyCustomBucket', bucketName);
-
-// -------------------------
-// Lambda + API Gateway
-// -------------------------
-const lambdaStack = backend.createStack('s3-access-handler-stack');
-
-const s3AccessHandler = new NodejsFunction(lambdaStack, 'S3AccessHandler', {
-  entry: path.resolve(__dirname, 'functions/s3AccessHandler/index.ts'),
-  handler: 'handler',
-  runtime: Runtime.NODEJS_20_X,
-  bundling: {
-    externalModules: [],
-    target: 'node20',
-  },
-  environment: {
-    MY_CUSTOM_BUCKET_NAME: bucketName,
-    MY_CUSTOM_BUCKET_REGION: bucketRegion,
-    DB_HOST: '', // populate via Amplify secrets
-    DB_USER: '',
-    DB_PASS: '',
-    DB_NAME: '',
-  },
+const backend = defineBackend({
+  auth,
 });
 
-// Attach S3 permissions for Lambda
-s3AccessHandler.addToRolePolicy(
-  new PolicyStatement({
-    effect: Effect.ALLOW,
-    actions: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject'],
-    resources: [`${customBucket.bucketArn}/*`],
-  })
-);
-s3AccessHandler.addToRolePolicy(
-  new PolicyStatement({
-    effect: Effect.ALLOW,
-    actions: ['s3:ListBucket', 's3:GetBucketLocation'],
-    resources: [customBucket.bucketArn],
-  })
-);
+// Map custom permissions to S3 actions for the IAM policy generator.
+type S3PermissionKeys = "get" | "list" | "write" | "delete";
 
-// API Gateway
-const api = new apigw.RestApi(lambdaStack, 'S3AccessApi', {
-  restApiName: 'S3AccessApi',
-  deployOptions: { stageName: 'prod' },
-});
+const permissionToS3Actions: Record<S3PermissionKeys, string[]> = {
+  get: ["s3:GetObject"],
+  list: ["s3:ListBucket"],
+  write: ["s3:PutObject"],
+  delete: ["s3:DeleteObject"],
+};
 
-const s3access = api.root.addResource('s3access');
-s3access.addMethod(
-  'POST',
-  new apigw.LambdaIntegration(s3AccessHandler, { proxy: true })
-);
+/**
+ * Dynamically generates a policy statement array from the access configuration.
+ */
+function generatePolicyStatements(bucketArn: string, rules: AccessRule[]): PolicyStatement[] {
+  const statements: PolicyStatement[] = [];
+  const listBucketResources: string[] = [];
 
-// -------------------------
-// Attach IAM policies to Cognito groups
-// -------------------------
-const { groups } = backend.auth.resources;
+  for (const rule of rules) {
+    const actions: string[] = [];
+    const resources: string[] = [];
 
-if (groups['ReadOnly'] && groups['Contributor'] && groups['Administrator']) {
-  const readOnlyPolicy = new Policy(backend.stack, 'ReadOnlyPolicy', {
-    statements: [
-      new PolicyStatement({
+    const objectActions = rule.permissions
+      .filter((p: string) => p !== "list")
+      .flatMap((p: S3PermissionKeys) => permissionToS3Actions[p]);
+
+    if (objectActions.length > 0) {
+      actions.push(...objectActions);
+      resources.push(`${bucketArn}/${rule.path}`);
+    }
+
+    if (rule.permissions.includes("list")) {
+      listBucketResources.push(`${bucketArn}/${rule.path.replace(/\*/g, '')}`);
+    }
+
+    if (actions.length > 0) {
+      statements.push(new PolicyStatement({
         effect: Effect.ALLOW,
-        actions: ['s3:ListBucket', 's3:GetObject'],
-        resources: [customBucket.bucketArn, `${customBucket.bucketArn}/*`],
-      }),
-    ],
-  });
+        actions: actions,
+        resources: resources,
+      }));
+    }
+  }
 
-  const contributorPolicy = new Policy(backend.stack, 'ContributorPolicy', {
-    statements: [
-      new PolicyStatement({
-        effect: Effect.ALLOW,
-        actions: ['s3:ListBucket', 's3:GetObject', 's3:PutObject'],
-        resources: [customBucket.bucketArn, `${customBucket.bucketArn}/*`],
-      }),
-    ],
-  });
+  if (listBucketResources.length > 0) {
+    statements.push(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: ["s3:ListBucket"],
+      resources: listBucketResources,
+    }));
+  }
 
-  const adminPolicy = new Policy(backend.stack, 'AdminPolicy', {
-    statements: [
-      new PolicyStatement({
-        effect: Effect.ALLOW,
-        actions: ['s3:ListBucket', 's3:GetObject', 's3:PutObject', 's3:DeleteObject'],
-        resources: [customBucket.bucketArn, `${customBucket.bucketArn}/*`],
-      }),
-    ],
-  });
-
-  groups['ReadOnly'].role.attachInlinePolicy(readOnlyPolicy);
-  groups['Contributor'].role.attachInlinePolicy(contributorPolicy);
-  groups['Administrator'].role.attachInlinePolicy(adminPolicy);
+  return statements;
 }
 
-// -------------------------
-// Outputs for frontend
-// -------------------------
+/**
+ * Generates the frontend-facing path configuration from the accessConfig.
+ * This is the automation that removes the need for manual duplication.
+ */
+function generateFrontendPaths(config: Record<string, AccessRule[]>): Record<string, any> {
+  const paths: Record<string, any> = {};
+
+  for (const [group, rules] of Object.entries(config)) {
+    for (const rule of rules) {
+      const path = rule.path;
+      const groupsKey = `groups${group}`;
+
+      if (!paths[path]) {
+        paths[path] = {};
+      }
+
+      if (!paths[path][groupsKey]) {
+        paths[path][groupsKey] = [];
+      }
+      paths[path][groupsKey].push(...rule.permissions);
+    }
+  }
+  return paths;
+}
+
+const customBucketStack = backend.createStack("custom-bucket-stack");
+
+const bucketName = process.env.MY_CUSTOM_BUCKET_NAME!.trim();
+const bucketRegion = process.env.MY_CUSTOM_BUCKET_REGION!.trim();
+
+const customBucket = Bucket.fromBucketName(customBucketStack, "MyCustomBucket", bucketName);
+
+// The frontend paths are now dynamically generated!
+const frontendPaths = generateFrontendPaths(accessConfig);
+
 backend.addOutput({
   storage: {
     aws_region: bucketRegion,
     bucket_name: customBucket.bucketName,
-  },
-  custom: {
-    s3AccessApiUrl: api.url,
+    buckets: [{
+      aws_region: bucketRegion,
+      bucket_name: customBucket.bucketName,
+      name: customBucket.bucketName,
+      // Pass the dynamically generated paths object here.
+      paths: frontendPaths,
+    }],
   },
 });
 
-export default backend;
+const { groups } = backend.auth.resources;
+
+// Loop through the accessConfig and attach a dynamically generated policy to each group.
+for (const [group, rules] of Object.entries(accessConfig)) {
+  if (groups[group]) {
+    const policyStatements = generatePolicyStatements(customBucket.bucketArn, rules);
+    if (policyStatements.length > 0) {
+      const policy = new Policy(backend.stack, `${group}_AuthPolicy`, {
+        statements: policyStatements,
+      });
+      groups[group].role.attachInlinePolicy(policy);
+    }
+  } else {
+    console.warn(`Group '${group}' not found in auth resources. Skipping policy attachment.`);
+  }
+}
