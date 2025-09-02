@@ -32,12 +32,8 @@ export const accessConfig: Record<string, AccessRule[]> = {
     },
   ],
 
-  // Limited: can view root-level files + RW access to 2 subfolders (no delete)
+  // Limited: RW access to 2 subfolders + view root-level files.
   LimitedContributor: [
-    {
-      path: "", // root-level (bucket directly, no prefix)
-      permissions: ["list", "get"],
-    },
     {
       path: "IMServUAT/PreProcAutoupload/*",
       permissions: ["get", "list", "write"],
