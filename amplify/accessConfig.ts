@@ -6,7 +6,7 @@ export interface AccessRule {
 }
 
 export const accessConfig: Record<string, AccessRule[]> = {
-  // Full CRUD access to IMServUAT folder
+  // Full CRUD access to IMServUAT folder and subfolders
   Administrator: [
     {
       path: "IMServUAT/*",
@@ -14,7 +14,7 @@ export const accessConfig: Record<string, AccessRule[]> = {
     },
   ],
 
-  // Read + Write, but no delete in IMServUAT folder
+  // Read/write access but no delete
   Contributor: [
     {
       path: "IMServUAT/*",
@@ -22,19 +22,16 @@ export const accessConfig: Record<string, AccessRule[]> = {
     },
   ],
 
-  // Limited access
+  // Limited: can view root-level files + RW access to 2 subfolders (no delete)
   LimitedContributor: [
-    // Root-level files only (not subfolders)
     {
-      path: "", // ✅ empty path = root-level objects
-      permissions: ["get", "list"],
+      path: "", // root-level (bucket directly, no prefix)
+      permissions: ["list", "get"],
     },
-    // PreProcAutoupload subfolder
     {
       path: "IMServUAT/PreProcAutoupload/*",
       permissions: ["get", "list", "write"],
     },
-    // DataExtract subfolder
     {
       path: "IMServUAT/DataExtract/*",
       permissions: ["get", "list", "write"],

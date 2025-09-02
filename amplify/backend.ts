@@ -28,57 +28,62 @@ const permissionToS3Actions: Record<S3PermissionKeys, string[]> = {
  */
 function generatePolicyStatements(bucketArn: string, rules: AccessRule[]): PolicyStatement[] {
   const statements: PolicyStatement[] = [];
-  const listPrefixes: string[] = [];
+  const folderListPrefixes: string[] = [];
+  let hasRootListPermission = false;
 
   for (const rule of rules) {
     const actions: string[] = [];
     const resources: string[] = [];
 
-    // Handle object-level actions (get, put, delete)
+    // Map permissions except "list"
     const objectActions = rule.permissions
-      .filter((p: string) => p !== "list")
+      .filter((p) => p !== "list")
       .flatMap((p: S3PermissionKeys) => permissionToS3Actions[p]);
 
     if (objectActions.length > 0) {
-      if (rule.path === "") {
-        // ✅ Root-level objects
-        resources.push(`${bucketArn}/*`);
-      } else {
-        resources.push(`${bucketArn}/${rule.path}`);
-      }
-
       actions.push(...objectActions);
+      resources.push(`${bucketArn}/${rule.path}`);
+    }
 
+    // Handle list permissions
+    if (rule.permissions.includes("list")) {
+      if (rule.path === "") {
+        hasRootListPermission = true;
+      } else {
+        const normalizedPrefix = rule.path.replace(/\*$/, "");
+        folderListPrefixes.push(normalizedPrefix);
+      }
+    }
+
+    if (actions.length > 0) {
       statements.push(new PolicyStatement({
         effect: Effect.ALLOW,
         actions,
         resources,
       }));
     }
-
-    // Handle list permissions
-    if (rule.permissions.includes("list")) {
-      if (rule.path === "") {
-        // ✅ Root-level listing
-        listPrefixes.push("");
-      } else {
-        // Normalize: strip trailing *
-        listPrefixes.push(rule.path.replace(/\*$/, ""));
-      }
-    }
   }
 
-  // Add a single ListBucket statement if needed
-  if (listPrefixes.length > 0) {
+  // Add a consolidated ListBucket statement for specific folders
+  if (folderListPrefixes.length > 0) {
     statements.push(new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:ListBucket"],
-      resources: [bucketArn], // ✅ bucket-only ARN
+      resources: [bucketArn],
       conditions: {
         StringLike: {
-          "s3:prefix": listPrefixes,
+          "s3:prefix": folderListPrefixes,
         },
       },
+    }));
+  }
+
+  // Add a separate ListBucket statement for the root, if needed
+  if (hasRootListPermission) {
+    statements.push(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: ["s3:ListBucket"],
+      resources: [bucketArn],
     }));
   }
 
