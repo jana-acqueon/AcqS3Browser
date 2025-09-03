@@ -7,16 +7,16 @@ const backend = defineBackend({ auth });
 
 const customBucketStack = backend.createStack("custom-bucket-stack");
 
-const bucketName = process.env.BUCKET_NAME?.trim();
-const bucketRegion = process.env.BUCKET_REGION?.trim();
-const rootfolderName = process.env.ROOT_FOLDER_NAME?.trim();
+// const bucketName = process.env.BUCKET_NAME?.trim();
+// const bucketRegion = process.env.BUCKET_REGION?.trim();
+// const rootfolderName = process.env.ROOT_FOLDER_NAME?.trim();
 
-// const bucketName = 'aec-imserv-uat-bkt';
-// const bucketRegion = 'us-east-1';
-// const folderName = process.env.MY_FOLDER?.trim();
+const bucketName = 'aec-imserv-uat-bkt';
+const bucketRegion = 'us-east-1';
+const rootfolderName = "IMServUAT";
 
 if (!bucketName || !bucketRegion || !rootfolderName) {
-  throw new Error("Missing required environment variables:- MY_CUSTOM_BUCKET_NAME or MY_CUSTOM_BUCKET_REGION");
+  throw new Error("Missing required environment variables: CUSTOM_BUCKET_NAME or CUSTOM_BUCKET_REGION or ROOT_FOLDER_NAME");
 }
 
 const customBucket = Bucket.fromBucketName(customBucketStack, "MyCustomBucket", bucketName);
