@@ -26,19 +26,14 @@ backend.addOutput({
         bucket_name: customBucket.bucketName,
         name: customBucket.bucketName,
         paths: {
-          "IMServUAT/": {
+          "IMServUAT/*": {
             groupsAdministrator: ["get", "list", "write", "delete"],
             groupsContributor: ["get", "list", "write"],
-            groupsLimitedContributor: ["get", "list"], // root files only
           },
-          "IMServUAT/PreProcAutoupload/": {
-            groupsAdministrator: ["get", "list", "write", "delete"],
-            groupsContributor: ["get", "list", "write"],
+          "IMServUAT/PreProcAutoupload/*": {
             groupsLimitedContributor: ["get", "list", "write"],
           },
-          "IMServUAT/DataExtract/": {
-            groupsAdministrator: ["get", "list", "write", "delete"],
-            groupsContributor: ["get", "list", "write"],
+          "IMServUAT/DataExtract/*": {
             groupsLimitedContributor: ["get", "list", "write"],
           },
         },
