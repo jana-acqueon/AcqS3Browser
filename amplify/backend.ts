@@ -91,6 +91,7 @@ const authPolicy_LimitedContributor = new Policy(backend.stack, "LimitedContribu
       effect: Effect.ALLOW,
       actions: ["s3:PutObject"],
       resources: [
+        `${customBucket.bucketArn}/${rootfolderName}/*`,
         `${customBucket.bucketArn}/${rootfolderName}/PreProcAutoupload/*`,
         `${customBucket.bucketArn}/${rootfolderName}/DataExtract/*`,
       ],
@@ -103,7 +104,7 @@ const authPolicy_LimitedContributor = new Policy(backend.stack, "LimitedContribu
       conditions: {
         StringLike: {
           "s3:prefix": [
-            `${rootfolderName}/`,
+            `${rootfolderName}/*`,
             `${rootfolderName}/PreProcAutoupload/`,
             `${rootfolderName}/DataExtract/`,
           ],
