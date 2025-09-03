@@ -29,11 +29,6 @@ backend.addOutput({
           "IMServUAT/*": {
             groupsAdministrator: ["get", "list", "write", "delete"],
             groupsContributor: ["get", "list", "write"],
-          },
-          "IMServUAT/PreProcAutoupload/*": {
-            groupsLimitedContributor: ["get", "list", "write"],
-          },
-          "IMServUAT/DataExtract/*": {
             groupsLimitedContributor: ["get", "list", "write"],
           },
         },
@@ -64,17 +59,12 @@ const authPolicy_Contributor = new Policy(backend.stack, "Contributor_AuthPolicy
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:GetObject", "s3:PutObject"],
-      resources: [`${customBucket.bucketArn}/IMServUAT/*`],
+      resources: [`${customBucket.bucketArn}/*`],
     }),
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:ListBucket"],
       resources: [customBucket.bucketArn],
-      conditions: {
-        StringLike: {
-          "s3:prefix": ["IMServUAT/*"],
-        },
-      },
     }),
   ],
 });
