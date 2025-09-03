@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   createAmplifyAuthAdapter,
   createStorageBrowser,
@@ -7,6 +8,7 @@ import './App.css';
 
 import config from '../amplify_outputs.json';
 import { Amplify } from 'aws-amplify';
+import { fetchAuthSession } from 'aws-amplify/auth';
 import {
   Authenticator,
   Button,
@@ -64,6 +66,23 @@ const customTheme = {
 };
 
 function App() {
+  const [userGroups, setUserGroups] = useState<string[]>([]);
+
+  useEffect(() => {
+    async function getUserGroups() {
+      try {
+        const { tokens } = await fetchAuthSession();
+        const groups = tokens?.idToken?.payload['cognito:groups'] as string[];
+        if (groups) {
+          setUserGroups(groups);
+        }
+      } catch (error) {
+        console.error('Error fetching user groups:', error);
+      }
+    }
+    getUserGroups();
+  }, []);
+
   return (
     <ThemeProvider theme={customTheme} colorMode="light">
       <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -86,7 +105,11 @@ function App() {
 
                   {/* Right: Username + Sign Out */}
                   <div className="flex items-center gap-4">
-                    <span className="text-gray-700 font-medium">{user?.signInDetails?.loginId}</span>
+                    <div className="flex flex-col items-end">
+                      <span className="text-gray-700 font-medium"> {user?.signInDetails?.loginId}
+                      </span>
+                      <span className="text-gray-500 text-sm"> {userGroups.length > 0 ? userGroups.join(', ') : ''}                      </span>
+                    </div>
                     <Button size="small" variation="primary" onClick={signOut}>
                       Sign out
                     </Button>
@@ -115,5 +138,6 @@ function App() {
     </ThemeProvider>
   );
 }
+
 
 export default App;
