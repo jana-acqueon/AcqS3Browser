@@ -11,7 +11,7 @@ const bucketName = process.env.MY_CUSTOM_BUCKET_NAME?.trim();
 const bucketRegion = process.env.MY_CUSTOM_BUCKET_REGION?.trim();
 
 if (!bucketName || !bucketRegion) {
-  throw new Error("Missing required environment variables: MY_CUSTOM_BUCKET_NAME or MY_CUSTOM_BUCKET_REGION");
+  throw new Error("Missing required environment variables:- MY_CUSTOM_BUCKET_NAME or MY_CUSTOM_BUCKET_REGION");
 }
 
 const customBucket = Bucket.fromBucketName(customBucketStack, "MyCustomBucket", bucketName);
