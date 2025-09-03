@@ -86,12 +86,12 @@ const authPolicy_LimitedContributor = new Policy(backend.stack, "LimitedContribu
         `${customBucket.bucketArn}/${rootfolderName}/DataExtract/*`,
       ],
     }),
-    // Write access only to allowed subfolders
+    // Write access to root and allowed subfolders
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:PutObject"],
       resources: [
-        `${customBucket.bucketArn}/${rootfolderName}/*`,
+        `${customBucket.bucketArn}/${rootfolderName}/*`,   // 👈 added root folder write access
         `${customBucket.bucketArn}/${rootfolderName}/PreProcAutoupload/*`,
         `${customBucket.bucketArn}/${rootfolderName}/DataExtract/*`,
       ],
@@ -104,7 +104,7 @@ const authPolicy_LimitedContributor = new Policy(backend.stack, "LimitedContribu
       conditions: {
         StringLike: {
           "s3:prefix": [
-            `${rootfolderName}/*`,
+            `${rootfolderName}/`,
             `${rootfolderName}/PreProcAutoupload/`,
             `${rootfolderName}/DataExtract/`,
           ],
@@ -113,6 +113,7 @@ const authPolicy_LimitedContributor = new Policy(backend.stack, "LimitedContribu
     }),
   ],
 });
+
 
 // ---------------------- Attach policies to groups ----------------------
 
