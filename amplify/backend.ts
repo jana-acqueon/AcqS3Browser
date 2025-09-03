@@ -72,7 +72,7 @@ const authPolicy_Contributor = new Policy(backend.stack, "Contributor_AuthPolicy
       resources: [customBucket.bucketArn],
       conditions: {
         StringLike: {
-          "s3:prefix": ["IMServUAT/"],
+          "s3:prefix": ["IMServUAT/*"],
         },
       },
     }),
