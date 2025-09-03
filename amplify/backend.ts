@@ -7,10 +7,15 @@ const backend = defineBackend({ auth });
 
 const customBucketStack = backend.createStack("custom-bucket-stack");
 
-const bucketName = process.env.MY_CUSTOM_BUCKET_NAME?.trim();
-const bucketRegion = process.env.MY_CUSTOM_BUCKET_REGION?.trim();
+const bucketName = process.env.BUCKET_NAME?.trim();
+const bucketRegion = process.env.BUCKET_REGION?.trim();
+const rootfolderName = process.env.ROOT_FOLDER_NAME?.trim();
 
-if (!bucketName || !bucketRegion) {
+// const bucketName = 'aec-imserv-uat-bkt';
+// const bucketRegion = 'us-east-1';
+// const folderName = process.env.MY_FOLDER?.trim();
+
+if (!bucketName || !bucketRegion || !rootfolderName) {
   throw new Error("Missing required environment variables:- MY_CUSTOM_BUCKET_NAME or MY_CUSTOM_BUCKET_REGION");
 }
 
@@ -26,7 +31,7 @@ backend.addOutput({
         bucket_name: customBucket.bucketName,
         name: customBucket.bucketName,
         paths: {
-          "IMServUAT/*": {
+          [`${rootfolderName}/*`]: {
             groupsAdministrator: ["get", "list", "write", "delete"],
             groupsContributor: ["get", "list", "write"],
             groupsLimitedContributor: ["get", "list", "write"],
@@ -76,9 +81,9 @@ const authPolicy_LimitedContributor = new Policy(backend.stack, "LimitedContribu
       effect: Effect.ALLOW,
       actions: ["s3:GetObject"],
       resources: [
-        `${customBucket.bucketArn}/IMServUAT/*`,
-        `${customBucket.bucketArn}/IMServUAT/PreProcAutoupload/*`,
-        `${customBucket.bucketArn}/IMServUAT/DataExtract/*`,
+        `${customBucket.bucketArn}/${rootfolderName}/*`,
+        `${customBucket.bucketArn}/${rootfolderName}/PreProcAutoupload/*`,
+        `${customBucket.bucketArn}/${rootfolderName}/DataExtract/*`,
       ],
     }),
     // Write access only to allowed subfolders
@@ -86,8 +91,8 @@ const authPolicy_LimitedContributor = new Policy(backend.stack, "LimitedContribu
       effect: Effect.ALLOW,
       actions: ["s3:PutObject"],
       resources: [
-        `${customBucket.bucketArn}/IMServUAT/PreProcAutoupload/*`,
-        `${customBucket.bucketArn}/IMServUAT/DataExtract/*`,
+        `${customBucket.bucketArn}/${rootfolderName}/PreProcAutoupload/*`,
+        `${customBucket.bucketArn}/${rootfolderName}/DataExtract/*`,
       ],
     }),
     // List only specific prefixes
@@ -98,9 +103,9 @@ const authPolicy_LimitedContributor = new Policy(backend.stack, "LimitedContribu
       conditions: {
         StringLike: {
           "s3:prefix": [
-            "IMServUAT/",
-            "IMServUAT/PreProcAutoupload/",
-            "IMServUAT/DataExtract/",
+            `${rootfolderName}/`,
+            `${rootfolderName}/PreProcAutoupload/`,
+            `${rootfolderName}/DataExtract/`,
           ],
         },
       },
