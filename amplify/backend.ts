@@ -2,18 +2,22 @@ import { defineBackend } from '@aws-amplify/backend';
 import { auth } from './auth/resource';
 import { Effect, Policy, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { Bucket } from "aws-cdk-lib/aws-s3";
+import { Key } from "aws-cdk-lib/aws-kms";
 
 const backend = defineBackend({ auth });
 
 const customBucketStack = backend.createStack("custom-bucket-stack");
 
-// const bucketName = process.env.BUCKET_NAME?.trim();
-// const bucketRegion = process.env.BUCKET_REGION?.trim();
-// const rootfolderName = process.env.ROOT_FOLDER_NAME?.trim();
+const bucketName = process.env.BUCKET_NAME?.trim();
+const bucketRegion = process.env.BUCKET_REGION?.trim();
+const rootfolderName = process.env.ROOT_FOLDER_NAME?.trim();
+const kmsKeyValue = process.env.KMS_KEY?.trim() || '';
 
-const bucketName = 'aec-imserv-uat-bkt';
-const bucketRegion = 'us-east-1';
-const rootfolderName = "IMServUAT";
+const kmsKey = Key.fromKeyArn(customBucketStack, "MyKMSKey", kmsKeyValue);
+
+// const bucketName = 'aec-imserv-uat-bkt';
+// const bucketRegion = 'us-east-1';
+// const rootfolderName = "IMServUAT";
 
 if (!bucketName || !bucketRegion || !rootfolderName) {
   throw new Error("Missing required environment variables: CUSTOM_BUCKET_NAME or CUSTOM_BUCKET_REGION or ROOT_FOLDER_NAME");
@@ -56,6 +60,11 @@ const authPolicy_Administrator = new Policy(backend.stack, "Administrator_AuthPo
       actions: ["s3:ListBucket"],
       resources: [customBucket.bucketArn],
     }),
+    new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: ["kms:Decrypt", "kms:Encrypt", "kms:GenerateDataKey"],
+      resources: [kmsKey.keyArn],
+    })
   ],
 });
 
@@ -71,6 +80,11 @@ const authPolicy_Contributor = new Policy(backend.stack, "Contributor_AuthPolicy
       actions: ["s3:ListBucket"],
       resources: [customBucket.bucketArn],
     }),
+    new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: ["kms:Decrypt", "kms:Encrypt", "kms:GenerateDataKey"],
+      resources: [kmsKey.keyArn],
+    })
   ],
 });
 
@@ -111,6 +125,11 @@ const authPolicy_LimitedContributor = new Policy(backend.stack, "LimitedContribu
         },
       },
     }),
+    new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: ["kms:Decrypt", "kms:Encrypt", "kms:GenerateDataKey"],
+      resources: [kmsKey.keyArn],
+    })
   ],
 });
 
