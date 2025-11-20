@@ -273,9 +273,16 @@ body {
   }
 }
 
+.amplify-storage-browser__data-table {
+  overflow-x: hidden;
+  overflow-y: auto;
+  width: 100%;
+  table-layout: fixed;
+}
+
 .amplify-storage-browser__table-text-data-cell-text {
   display: block;
   white-space: normal;
   word-break: break-word;
-  max-width: 780px;
+  max-width: 100%;
 }
