@@ -119,7 +119,7 @@ function App() {
 
               {/* Main Content */}
               <main className="flex-1 w-full flex justify-center items-start p-6">
-                <div className="w-full max-w-6xl bg-white rounded-xl shadow-md p-6 overflow-x-auto">
+                <div className="w-full max-w-6xl bg-white rounded-xl shadow-md p-6 overflow-x-auto break-words">
                   <StorageBrowser />
                 </div>
               </main>
