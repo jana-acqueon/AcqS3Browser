@@ -273,6 +273,36 @@ body {
   }
 }
 
+/* Wrapper around the table: enable vertical and horizontal scroll */
+.amplify-storage-browser__data-table-wrapper {
+  max-height: 600px;      /* adjust based on your layout */
+  min-height: 300px;      /* ensures scroll area even if few items */
+  overflow-y: auto;       /* vertical scrolling */
+  overflow-x: auto;       /* horizontal scrolling */
+}
+
+/* Ensure table does not expand container unexpectedly */
+.amplify-storage-browser__data-table {
+  width: 100%;
+  min-width: 0;           /* prevents flex overflow issues */
+  table-layout: fixed;    /* optional: keeps table cells aligned */
+}
+
+/* Webkit scrollbar styling */
+.amplify-storage-browser__data-table-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
+.amplify-storage-browser__data-table-wrapper::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.amplify-storage-browser__data-table-wrapper::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
 html, body, #root {
   overflow-x: hidden; /* prevents page horizontal scrollbar */
 }
