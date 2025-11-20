@@ -273,8 +273,9 @@ body {
   }
 }
 
-/* Allow long filenames to wrap inside StorageBrowser */
-.amplify-storage-table td {
-  white-space: normal !important;  /* allow line breaks */
-  word-break: break-word;          /* break long words */
+.amplify-storage-browser__table-text-data-cell-text {
+  display: block;
+  white-space: normal;
+  word-break: break-word;
+  max-width: 780px;
 }
