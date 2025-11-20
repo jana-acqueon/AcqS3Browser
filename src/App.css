@@ -272,3 +272,9 @@ body {
     gap: 0.5rem;
   }
 }
+
+/* Allow long filenames to wrap inside StorageBrowser */
+.amplify-storage-table td {
+  white-space: normal !important;  /* allow line breaks */
+  word-break: break-word;          /* break long words */
+}
