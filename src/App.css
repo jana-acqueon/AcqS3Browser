@@ -273,34 +273,20 @@ body {
   }
 }
 
-/* Wrapper around the table: enable vertical and horizontal scroll */
-.amplify-storage-browser__data-table-wrapper {
-  max-height: 600px;      /* adjust based on your layout */
-  min-height: 300px;      /* ensures scroll area even if few items */
-  overflow-y: auto;       /* vertical scrolling */
-  overflow-x: auto;       /* horizontal scrolling */
-}
-
-/* Ensure table does not expand container unexpectedly */
+/* Container scroll behavior */
 .amplify-storage-browser__data-table {
-  width: 100%;
-  min-width: 0;           /* prevents flex overflow issues */
-  table-layout: fixed;    /* optional: keeps table cells aligned */
+  overflow-x: hidden;  /* hide horizontal scroll */
+  overflow-y: auto;    /* vertical scroll only */
+  width: 100%;         /* make sure table fits container */
+  table-layout: fixed; /* ensures cells respect max-width */
 }
 
-/* Webkit scrollbar styling */
-.amplify-storage-browser__data-table-wrapper::-webkit-scrollbar {
-  width: 8px;
-}
-
-.amplify-storage-browser__data-table-wrapper::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.3);
-  border-radius: 4px;
-}
-
-.amplify-storage-browser__data-table-wrapper::-webkit-scrollbar-track {
-  background-color: rgba(0, 0, 0, 0.05);
-  border-radius: 4px;
+/* Table cells */
+.amplify-storage-browser__table-text-data-cell-text {
+  display: block;
+  white-space: normal;       /* allow wrapping */
+  word-break: break-word;    /* break long words */
+  max-width: 100%;           /* never exceed container */
 }
 
 html, body, #root {
