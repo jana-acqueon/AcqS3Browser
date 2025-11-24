@@ -275,7 +275,7 @@ body {
 
 /* Container scroll behavior */
 .amplify-storage-browser__data-table {
-  max-height: 50vh;  
+  max-height: 45vh;  
   display: block;  
   overflow-x: hidden;  /* hide horizontal scroll */
   overflow-y: auto;    /* vertical scroll only */
@@ -293,6 +293,5 @@ body {
 
 /* Optional: Remove page scroll completely */
 html, body, #root {
-  overflow-x: hidden;
-  overflow-y: auto;    /* vertical scroll only */
+  overflow: hidden;
 }
