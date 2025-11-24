@@ -289,6 +289,14 @@ body {
   max-width: 100%;           /* never exceed container */
 }
 
+/* Force StorageBrowser to scroll vertically */
+.storage-browser-scroll {
+  max-height: 70vh;   /* adjust height as needed */
+  overflow-y: auto;
+  overflow-x: hidden; /* prevent horizontal scroll */
+}
+
+/* Optional: Remove page scroll completely */
 html, body, #root {
-  overflow-x: hidden; /* prevents page horizontal scrollbar */
+  overflow: hidden;
 }
