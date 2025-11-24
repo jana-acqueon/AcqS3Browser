@@ -275,6 +275,8 @@ body {
 
 /* Container scroll behavior */
 .amplify-storage-browser__data-table {
+  max-height: 70vh;  
+  display: block;  
   overflow-x: hidden;  /* hide horizontal scroll */
   overflow-y: auto;    /* vertical scroll only */
   width: 100%;         /* make sure table fits container */
@@ -287,13 +289,6 @@ body {
   white-space: normal;       /* allow wrapping */
   word-break: break-word;    /* break long words */
   max-width: 100%;           /* never exceed container */
-}
-
-/* Force StorageBrowser to scroll vertically */
-.storage-browser-scroll {
-  max-height: 70vh;   /* adjust height as needed */
-  overflow-y: auto;
-  overflow-x: hidden; /* prevent horizontal scroll */
 }
 
 /* Optional: Remove page scroll completely */
